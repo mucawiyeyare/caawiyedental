@@ -1,11 +1,12 @@
 import express from 'express';
-import { getUsers, getDoctors, createUser, updateUser, deleteUser } from '../controllers/user.controller.js';
+import { getUsers, getDoctors, createDoctor, createUser, updateUser, deleteUser } from '../controllers/user.controller.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Allow authenticated users to fetch active doctors (needed by reception/cashier/doctor)
 router.get('/doctors', protect, getDoctors);
+router.post('/doctors', protect, authorize('Admin'), createDoctor);
 
 // Admin-only endpoints
 router.use(protect, authorize('Admin'));

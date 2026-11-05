@@ -5,7 +5,7 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     try {
-      const saved = localStorage.getItem('dentalhub_theme');
+      const saved = localStorage.getItem('sodmas_theme') || localStorage.getItem('dentalhub_theme');
       if (saved === 'dark' || saved === 'light') return saved;
       return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     } catch {
@@ -25,7 +25,7 @@ export const ThemeProvider = ({ children }) => {
       root.style.colorScheme = 'light';
     }
     try {
-      localStorage.setItem('dentalhub_theme', theme);
+      localStorage.setItem('sodmas_theme', theme);
     } catch {
       // ignore
     }

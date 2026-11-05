@@ -43,10 +43,8 @@ async function generateUniqueCode(model, field, prefix, padLength = 4, yearPrefi
   let nextNum = maxNum + 1;
   let candidate = `${basePrefix}${nextNum.toString().padStart(padLength, '0')}`;
 
-  const existsQuery = { [field]: candidate };
-  if (tenantId) existsQuery.tenant_id = tenantId;
-
-  while (await model.exists(existsQuery)) {
+  // Ensure candidate is globally unique across all existing records to prevent duplicate key errors
+  while (await model.exists({ [field]: candidate })) {
     nextNum++;
     candidate = `${basePrefix}${nextNum.toString().padStart(padLength, '0')}`;
   }

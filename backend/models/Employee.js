@@ -8,8 +8,7 @@ const employeeSchema = new mongoose.Schema({
     index: true
   },
   employee_id: {
-    type: String,
-    unique: true
+    type: String
   },
   name: {
     type: String,
@@ -54,6 +53,7 @@ const employeeSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+employeeSchema.index({ tenant_id: 1, employee_id: 1 }, { unique: true });
 employeeSchema.index({ tenant_id: 1, status: 1 });
 
 export default mongoose.model('Employee', employeeSchema);

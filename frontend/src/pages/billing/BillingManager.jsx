@@ -276,7 +276,7 @@ const BillingManager = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    const clinicSlug = (user?.clinic?.name || 'Dental_Hub').replace(/\s+/g, '_');
+    const clinicSlug = (user?.clinic?.name || 'SODMAS').replace(/\s+/g, '_');
     link.setAttribute('download', `${clinicSlug}_All_Invoices_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();

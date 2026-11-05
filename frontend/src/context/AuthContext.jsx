@@ -5,10 +5,10 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('dentalhub_user') || localStorage.getItem('snab_dental_user');
+    const saved = localStorage.getItem('sodmas_user') || localStorage.getItem('dentalhub_user') || localStorage.getItem('snab_dental_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem('dentalhub_token') || localStorage.getItem('snab_dental_token'));
+  const [token, setToken] = useState(() => localStorage.getItem('sodmas_token') || localStorage.getItem('dentalhub_token') || localStorage.getItem('snab_dental_token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
           const res = await getMeApi();
           if (res.data.success) {
             setUser(res.data.user);
-            localStorage.setItem('dentalhub_user', JSON.stringify(res.data.user));
+            localStorage.setItem('sodmas_user', JSON.stringify(res.data.user));
           }
         } catch (err) {
           console.error('Session expired or invalid:', err);
@@ -38,8 +38,8 @@ export const AuthProvider = ({ children }) => {
         const { token: jwtToken, user: userData } = res.data;
         setToken(jwtToken);
         setUser(userData);
-        localStorage.setItem('dentalhub_token', jwtToken);
-        localStorage.setItem('dentalhub_user', JSON.stringify(userData));
+        localStorage.setItem('sodmas_token', jwtToken);
+        localStorage.setItem('sodmas_user', JSON.stringify(userData));
         return { success: true, user: userData };
       }
     } catch (err) {
@@ -53,6 +53,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken(null);
     setUser(null);
+    localStorage.removeItem('sodmas_token');
+    localStorage.removeItem('sodmas_user');
     localStorage.removeItem('dentalhub_token');
     localStorage.removeItem('dentalhub_user');
     localStorage.removeItem('snab_dental_token');
@@ -81,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     setUser(userData);
-    localStorage.setItem('dentalhub_user', JSON.stringify(userData));
+    localStorage.setItem('sodmas_user', JSON.stringify(userData));
   };
 
   const updateTenantBranding = (tenantUpdates) => {
@@ -94,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
     setUser(updatedUser);
-    localStorage.setItem('dentalhub_user', JSON.stringify(updatedUser));
+    localStorage.setItem('sodmas_user', JSON.stringify(updatedUser));
   };
 
   return (

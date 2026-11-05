@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { globalSearchApi } from '../../api/endpoints.js';
+import { globalSearchApi, getAppointmentsApi, getVisitsApi, getInvoicesApi } from '../../api/endpoints.js';
 import {
   Menu,
   Bell,
@@ -47,7 +47,7 @@ const PAGE_TITLES = {
   '/users':        'Users & Roles',
   '/audit-logs':   'Audit Logs',
   '/followups':    'Follow-ups',
-  '/super-admin/tenants': 'Dental Hub — Clinics & Tenants',
+  '/super-admin/tenants': 'SODMAS — Clinics & Tenants',
 };
 
 const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
@@ -72,6 +72,59 @@ const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
   const dropdownRef = useRef(null);
   const calendarRef = useRef(null);
   const notifRef = useRef(null);
+
+  // Live database alerts (appointments, visits, billing)
+  const [alerts, setAlerts] = useState({
+    appointments: 0,
+    visits: 0,
+    invoices: 0
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAlerts = async () => {
+      if (isSuperAdmin) return;
+      try {
+        const [appRes, visRes, invRes] = await Promise.allSettled([
+          getAppointmentsApi({ limit: 100 }),
+          getVisitsApi({ status: 'Waiting' }),
+          getInvoicesApi({ status: 'Pending' })
+        ]);
+        let aCount = 0;
+        if (appRes.status === 'fulfilled') {
+          const apps = appRes.value?.data?.data || appRes.value?.data || [];
+          if (Array.isArray(apps)) {
+            aCount = apps.filter(a => a.status === 'Scheduled' || a.status === 'Confirmed').length;
+          }
+        }
+        let vCount = 0;
+        if (visRes.status === 'fulfilled') {
+          const vis = visRes.value?.data?.data || visRes.value?.data || [];
+          vCount = Array.isArray(vis) ? vis.length : 0;
+        }
+        let iCount = 0;
+        if (invRes.status === 'fulfilled') {
+          const invs = invRes.value?.data?.data || invRes.value?.data || [];
+          if (Array.isArray(invs)) {
+            iCount = invs.filter(i => i.status === 'Pending' || i.payment_status === 'Unpaid').length;
+          }
+        }
+        if (isMounted) {
+          setAlerts({ appointments: aCount, visits: vCount, invoices: iCount });
+        }
+      } catch (err) {
+        if (isMounted) setAlerts({ appointments: 0, visits: 0, invoices: 0 });
+      }
+    };
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 60000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isSuperAdmin]);
+
+  const totalAlerts = alerts.appointments + alerts.visits + alerts.invoices;
 
   // Derive current page title from pathname
   const pageTitle =
@@ -126,7 +179,7 @@ const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
-    const clinicName = user?.tenant?.name || 'Dental Hub';
+    const clinicName = user?.tenant?.name || 'SODMAS';
     if (window.confirm(`Are you sure you want to log out from ${clinicName}?`)) {
       logout();
       navigate('/login');
@@ -201,7 +254,7 @@ const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
         </button>
         <div className="flex items-center gap-2 min-w-0">
           <span className="hidden sm:inline-block text-xs font-semibold text-slate-400 dark:text-slate-500 truncate max-w-[140px]">
-            {isSuperAdmin ? 'Dental Hub' : (tenant?.display_name || tenant?.name || 'Snab Dental MS')}
+            {isSuperAdmin ? 'SODMAS' : (tenant?.display_name || tenant?.name || 'Snab Dental MS')}
           </span>
           <span className="hidden sm:inline-block text-xs text-slate-300 dark:text-slate-600">/</span>
           <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
@@ -419,48 +472,95 @@ const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
             title="Clinic Notifications"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-[9px] font-bold flex items-center justify-center">
-              3
-            </span>
+            {totalAlerts > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-rose-600 text-white rounded-full text-[9px] font-bold flex items-center justify-center shadow-xs">
+                {totalAlerts > 99 ? '99+' : totalAlerts}
+              </span>
+            )}
           </button>
 
           {isNotifOpen && (
             <div className="absolute right-0 top-full mt-2.5 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                 <span className="font-bold text-slate-900 dark:text-white">Clinic Alerts & Activity</span>
-                <span className="text-[10px] font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">3 New</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  totalAlerts > 0
+                    ? 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/40 dark:border-rose-800'
+                    : 'text-slate-600 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                }`}>
+                  {totalAlerts > 0 ? `${totalAlerts} Active` : 'All Clear'}
+                </span>
               </div>
               <div className="py-2 space-y-2">
-                <div
-                  onClick={() => { setIsNotifOpen(false); navigate('/appointments'); }}
-                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                >
-                  <CalendarDays className="w-4 h-4 text-slate-700 dark:text-slate-300 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">Today's Appointment Schedule</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Patient appointments queued for clinic review.</span>
+                {totalAlerts === 0 ? (
+                  <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                    <CheckCircle2 className="w-6 h-6 mx-auto mb-1.5 text-emerald-500 opacity-80" />
+                    <p className="font-semibold text-slate-700 dark:text-slate-300">No Pending Alerts</p>
+                    <p className="text-[11px]">All appointments and patient queues are up to date.</p>
                   </div>
-                </div>
-                <div
-                  onClick={() => { setIsNotifOpen(false); navigate('/lab'); }}
-                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                >
-                  <AlertCircle className="w-4 h-4 text-slate-700 dark:text-slate-300 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">Laboratory Sessions</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Tests pending cashier processing and sample results.</span>
-                  </div>
-                </div>
-                <div
-                  onClick={() => { setIsNotifOpen(false); navigate('/visits'); }}
-                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-slate-700 dark:text-slate-300 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-900 dark:text-white block">Active Patient Flow</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Patients waiting in consultation and treatment queue.</span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    {alerts.appointments > 0 && (
+                      <div
+                        onClick={() => { setIsNotifOpen(false); navigate('/appointments'); }}
+                        className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                      >
+                        <CalendarDays className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900 dark:text-white">Scheduled Appointments</span>
+                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded">
+                              {alerts.appointments}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
+                            Patient bookings scheduled for clinic attendance.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {alerts.visits > 0 && (
+                      <div
+                        onClick={() => { setIsNotifOpen(false); navigate('/visits'); }}
+                        className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900 dark:text-white">Active Patient Flow</span>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">
+                              {alerts.visits} waiting
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
+                            Patients waiting in consultation and triage queue.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {alerts.invoices > 0 && (
+                      <div
+                        onClick={() => { setIsNotifOpen(false); navigate('/billing'); }}
+                        className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-start gap-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                      >
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900 dark:text-white">Pending Invoices</span>
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded">
+                              {alerts.invoices} unpaid
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
+                            Invoices awaiting cashier payment settlement.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}

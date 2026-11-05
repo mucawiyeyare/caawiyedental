@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-// Registry of all available modules in Dental Hub
+// Registry of all available modules in SODMAS
 export const MODULE_REGISTRY = {
   patients:       { key: 'patients',       label: 'Patients & History',         description: 'Patient registration and medical history' },
   appointments:   { key: 'appointments',   label: 'Appointments',               description: 'Appointment scheduling and management' },

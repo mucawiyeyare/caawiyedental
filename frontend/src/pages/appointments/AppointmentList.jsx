@@ -12,7 +12,8 @@ import {
 import StatusBadge from '../../components/ui/StatusBadge.jsx';
 import Modal from '../../components/ui/Modal.jsx';
 import SearchableSelect from '../../components/ui/SearchableSelect.jsx';
-import { Calendar, Plus, Search, Clock, RefreshCw, UserCheck, AlertTriangle, CheckCircle2, Users, Stethoscope } from 'lucide-react';
+import AppointmentSlipModal from '../../components/ui/AppointmentSlipModal.jsx';
+import { Calendar, Plus, Search, Clock, RefreshCw, UserCheck, AlertTriangle, CheckCircle2, Users, Stethoscope, Printer } from 'lucide-react';
 
 const AppointmentList = () => {
   // Tab: 'appointments' | 'followups'
@@ -26,6 +27,7 @@ const AppointmentList = () => {
   const [searchApt, setSearchApt] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [isAptModalOpen, setIsAptModalOpen] = useState(false);
+  const [selectedAptForPrint, setSelectedAptForPrint] = useState(null);
   const [aptForm, setAptForm] = useState({
     patient_id: '',
     doctor_id: '',
@@ -321,16 +323,28 @@ const AppointmentList = () => {
                         </td>
                         <td className="py-3.5 px-4"><StatusBadge status={apt.status} /></td>
                         <td className="py-3.5 px-5 text-right">
-                          {apt.status === 'Scheduled' && (
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button onClick={() => handleAptStatusChange(apt._id, 'Confirmed')}
-                                className="px-2.5 py-1 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 font-bold rounded-lg transition cursor-pointer">Confirm</button>
-                              <button onClick={() => handleAptStatusChange(apt._id, 'Completed')}
-                                className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold rounded-lg transition cursor-pointer">Complete</button>
-                              <button onClick={() => handleAptStatusChange(apt._id, 'Cancelled')}
-                                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 font-bold rounded-lg transition cursor-pointer">Cancel</button>
-                            </div>
-                          )}
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAptForPrint(apt)}
+                              className="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold rounded-lg transition cursor-pointer flex items-center gap-1 text-[11px]"
+                              title="Print Appointment Voucher / Slip"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span>Print</span>
+                            </button>
+
+                            {apt.status === 'Scheduled' && (
+                              <>
+                                <button onClick={() => handleAptStatusChange(apt._id, 'Confirmed')}
+                                  className="px-2.5 py-1 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 font-bold rounded-lg transition cursor-pointer text-[11px]">Confirm</button>
+                                <button onClick={() => handleAptStatusChange(apt._id, 'Completed')}
+                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold rounded-lg transition cursor-pointer text-[11px]">Complete</button>
+                                <button onClick={() => handleAptStatusChange(apt._id, 'Cancelled')}
+                                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 font-bold rounded-lg transition cursor-pointer text-[11px]">Cancel</button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -683,6 +697,13 @@ const AppointmentList = () => {
           </div>
         </form>
       </Modal>
+
+      {/* ── Appointment Slip Print Modal ── */}
+      <AppointmentSlipModal
+        isOpen={Boolean(selectedAptForPrint)}
+        onClose={() => setSelectedAptForPrint(null)}
+        appointment={selectedAptForPrint}
+      />
 
     </div>
   );

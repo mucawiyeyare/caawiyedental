@@ -23,7 +23,7 @@ const Layout = () => {
   const { user, isSuperAdmin, tenant } = useAuth();
 
   const clinicTitle = isSuperAdmin
-    ? 'Dental Hub SaaS Platform'
+    ? 'SODMAS SaaS Platform'
     : (tenant?.display_name || tenant?.name || 'Snab Dental MS');
 
   return (
@@ -54,7 +54,7 @@ const Layout = () => {
             </div>
             <div className="text-center sm:text-right">
               Powered by{' '}
-              <span className="font-bold text-slate-700 dark:text-slate-300">Dental Hub Multitenant SaaS</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">SODMAS Multitenant SaaS</span>
             </div>
           </footer>
         </main>

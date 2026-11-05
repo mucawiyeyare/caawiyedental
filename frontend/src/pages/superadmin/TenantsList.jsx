@@ -327,7 +327,7 @@ const TenantsList = () => {
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight">Dental Hub Platform Admin</h1>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight">SODMAS Platform Admin</h1>
               <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold border border-blue-400/30 uppercase tracking-wider">
                 Multitenant Core
               </span>
@@ -403,7 +403,7 @@ const TenantsList = () => {
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Tenant Clinics Directory</h3>
-            <p className="text-xs text-slate-400 mt-0.5">All registered clinics running on this Dental Hub deployment</p>
+            <p className="text-xs text-slate-400 mt-0.5">All registered clinics running on this SODMAS deployment</p>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -599,7 +599,7 @@ const TenantsList = () => {
       <Modal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        title="Register New Clinic on Dental Hub"
+        title="Register New Clinic on SODMAS"
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">

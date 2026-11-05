@@ -86,6 +86,7 @@ export const deleteEmployeeApi = (id) => api.delete(`/employees/${id}`);
 
 export const getUsersApi = () => api.get('/users');
 export const getDoctorsApi = () => api.get('/users/doctors');
+export const createDoctorApi = (data) => api.post('/users/doctors', data);
 export const createUserApi = (data) => api.post('/users', data);
 export const updateUserApi = (id, data) => api.put(`/users/${id}`, data);
 export const deleteUserApi = (id) => api.delete(`/users/${id}`);

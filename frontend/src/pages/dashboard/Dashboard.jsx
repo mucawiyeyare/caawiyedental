@@ -11,7 +11,8 @@ import {
   getDoctorPerformanceReportApi,
   getInventoryApi
 } from '../../api/endpoints.js';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ShoppingBag, Users, Calendar, RotateCcw } from 'lucide-react';
+import CircularKpiCard from '../../components/cards/CircularKpiCard.jsx';
 
 /* ==========================================================================
    VIBRANT COLORED KPI CARDS (Blue, Green, Amber, Purple)
@@ -709,6 +710,40 @@ const Dashboard = () => {
     year: 'numeric'
   });
 
+  // Calculate completion & flow percentages for Circular Donut KPI Gauges based on live database data
+  const collectionRate = useMemo(() => {
+    const totalBilled = todayRevenueVal + totalOutstanding;
+    if (totalBilled > 0) {
+      return Math.min(Math.max(Math.round((todayRevenueVal / totalBilled) * 100), 0), 100);
+    }
+    return todayRevenueVal > 0 ? 100 : 0;
+  }, [todayRevenueVal, totalOutstanding]);
+
+  const patientFlowRate = useMemo(() => {
+    if (todayPatientsCount > 0) {
+      const activeWaiting = stats?.visits?.waitingForDoctor ?? 0;
+      const served = Math.max(todayPatientsCount - activeWaiting, 0);
+      return Math.min(Math.max(Math.round((served / todayPatientsCount) * 100), 0), 100);
+    }
+    return 0;
+  }, [todayPatientsCount, stats]);
+
+  const apptCompletionRate = useMemo(() => {
+    if (todayApptsCount > 0) {
+      const completed = stats?.appointments?.completedToday ?? 0;
+      return Math.min(Math.max(Math.round((completed / todayApptsCount) * 100), 0), 100);
+    }
+    return 0;
+  }, [todayApptsCount, stats]);
+
+  const receivableRiskRate = useMemo(() => {
+    const totalBilled = todayRevenueVal + totalOutstanding;
+    if (totalBilled > 0) {
+      return Math.min(Math.max(Math.round((totalOutstanding / totalBilled) * 100), 0), 100);
+    }
+    return 0;
+  }, [todayRevenueVal, totalOutstanding]);
+
   return (
     <div className="space-y-6 pb-12 font-sans">
       
@@ -757,51 +792,47 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ── 2. TOP COLORED KPI CARDS (Blue, Green, Amber, Purple) ── */}
+      {/* ── 2. TOP MODERN KPI CARDS (Matching Reference Design with Circular Progress Gauges) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* KPI 1: Daily Revenue (Blue) */}
-        <ColoredKpiCard
-          label="Today's Collections"
-          value={`$${todayRevenueVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subtext="vs yesterday"
-          trend={trends.revenue}
-          isPositive={trends.revenuePositive}
-          badgeText="Daily Gross"
+        {/* KPI 1: Collections / Sales (Blue) */}
+        <CircularKpiCard
+          icon={<ShoppingBag className="w-5 h-5 stroke-[2.2]" />}
+          value={`$${todayRevenueVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+          label="Sales Collections"
+          percentage={collectionRate}
           colorScheme="blue"
+          onOptionsClick={() => navigate('/billing')}
         />
 
-        {/* KPI 2: Patients in Clinic (Green / Emerald) */}
-        <ColoredKpiCard
-          label="Patients in Clinic"
-          value={todayPatientsCount}
-          subtext="registered today"
-          trend={trends.patients}
-          isPositive={trends.patientsPositive}
-          badgeText="Patient Flow"
-          colorScheme="emerald"
+        {/* KPI 2: Patients in Clinic (Green) */}
+        <CircularKpiCard
+          icon={<Users className="w-5 h-5 stroke-[2.2]" />}
+          value={todayPatientsCount > 0 ? `${todayPatientsCount}` : '0'}
+          label="Patients Flow"
+          percentage={patientFlowRate}
+          colorScheme="green"
+          onOptionsClick={() => navigate('/visits')}
         />
 
         {/* KPI 3: Scheduled Appointments (Amber) */}
-        <ColoredKpiCard
-          label="Scheduled Appointments"
-          value={todayApptsCount}
-          subtext="active bookings"
-          trend={trends.appointments}
-          isPositive={trends.appointmentsPositive}
-          badgeText="Calendar"
+        <CircularKpiCard
+          icon={<Calendar className="w-5 h-5 stroke-[2.2]" />}
+          value={todayApptsCount > 0 ? `${todayApptsCount}` : '0'}
+          label="Appointments"
+          percentage={apptCompletionRate}
           colorScheme="amber"
+          onOptionsClick={() => navigate('/appointments')}
         />
 
-        {/* KPI 4: Pending Receivables (Purple / Indigo) */}
-        <ColoredKpiCard
+        {/* KPI 4: Pending Receivables (Red) */}
+        <CircularKpiCard
+          icon={<RotateCcw className="w-5 h-5 stroke-[2.2]" />}
+          value={`$${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
           label="Pending Receivables"
-          value={`$${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subtext={`${stats?.financials?.unpaidInvoicesCount || 0} unpaid balances`}
-          trend={trends.profit || '+0%'}
-          isPositive={totalOutstanding === 0}
-          badgeText="Accounts Due"
-          colorScheme="purple"
+          percentage={receivableRiskRate}
+          colorScheme="red"
+          onOptionsClick={() => navigate('/billing')}
         />
 
       </div>

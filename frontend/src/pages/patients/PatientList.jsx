@@ -1094,7 +1094,7 @@ const PatientList = () => {
 
           {/* Footer Branding */}
           <p className="text-[10px] text-slate-400 text-center mt-3 pb-2">
-            © {new Date().getFullYear()} {user?.clinic?.name || 'Dental Hub'}. All rights reserved.
+            © {new Date().getFullYear()} {user?.clinic?.name || 'SODMAS'}. All rights reserved.
           </p>
         </div>
       )}

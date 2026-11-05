@@ -33,7 +33,7 @@ const Sidebar = ({ isOpen, onClose, onOpenProfile }) => {
 
   // Dynamic branding
   const clinicName = isSuperAdmin
-    ? 'Dental Hub'
+    ? 'SODMAS'
     : (tenant?.display_name || tenant?.name || 'Snab Dental MS');
 
   const tagline = isSuperAdmin
@@ -48,11 +48,11 @@ const Sidebar = ({ isOpen, onClose, onOpenProfile }) => {
     ? '/logo.png'
     : (tenant?.logo || null);
 
-  // Live badge counts matching the red notification badges in reference UI
+  // Live database badge counts (badges appear only when there are active/pending items)
   const [badgeCounts, setBadgeCounts] = useState({
-    appointments: 9,
-    visits: 4,
-    billing: 17
+    appointments: 0,
+    visits: 0,
+    billing: 0
   });
 
   useEffect(() => {
@@ -90,15 +90,14 @@ const Sidebar = ({ isOpen, onClose, onOpenProfile }) => {
 
         if (isMounted) {
           setBadgeCounts({
-            appointments: appCount > 0 ? appCount : 9,
-            visits: visCount > 0 ? visCount : 4,
-            billing: invCount > 0 ? invCount : 17
+            appointments: appCount,
+            visits: visCount,
+            billing: invCount
           });
         }
       } catch {
-        // Fallback default demonstration counts matching screenshot
         if (isMounted) {
-          setBadgeCounts({ appointments: 9, visits: 4, billing: 17 });
+          setBadgeCounts({ appointments: 0, visits: 0, billing: 0 });
         }
       }
     };

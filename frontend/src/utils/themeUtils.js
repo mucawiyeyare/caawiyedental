@@ -1,5 +1,5 @@
 /**
- * Theme & Color Utility for Dental Hub Tenants
+ * Theme & Color Utility for SODMAS Tenants
  * Allows each clinic to customize dashboard colors based on their logo or curated presets,
  * with real-time preview, text contrast controls, and dynamic styling across the application.
  */

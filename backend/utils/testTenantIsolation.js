@@ -1,5 +1,5 @@
 /**
- * Dental Hub — Automated Tenant Isolation & Feature Security Test Suite
+ * SODMAS — Automated Tenant Isolation & Feature Security Test Suite
  * 
  * Verifies all 11 requirements from Section 12:
  * 1. Existing application features still work
@@ -49,7 +49,7 @@ function assert(condition, message) {
 
 async function runTests() {
   console.log('\n╔═════════════════════════════════════════════════════════════════╗');
-  console.log('║     Dental Hub — Multitenant Isolation & Security Tests         ║');
+  console.log('║     SODMAS — Multitenant Isolation & Security Tests             ║');
   console.log('╚═════════════════════════════════════════════════════════════════╝\n');
 
   await mongoose.connect(MONGO_URI);

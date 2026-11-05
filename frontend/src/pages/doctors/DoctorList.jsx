@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { getDoctorsApi, getVisitsApi, createEmployeeApi } from '../../api/endpoints.js';
+import { getDoctorsApi, getVisitsApi, createDoctorApi } from '../../api/endpoints.js';
 import StatusBadge from '../../components/ui/StatusBadge.jsx';
 import Modal from '../../components/ui/Modal.jsx';
 import {
@@ -14,12 +14,15 @@ import {
   Calendar,
   Activity,
   CheckCircle2,
-  Building2
+  Building2,
+  Key,
+  Copy,
+  AlertCircle
 } from 'lucide-react';
 
 const DoctorList = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'Admin';
+  const canAddDoctor = user?.role === 'Admin' || user?.is_super_admin || user?.role === 'Super Admin';
   const navigate = useNavigate();
 
   const [doctors, setDoctors] = useState([]);
@@ -30,8 +33,13 @@ const DoctorList = () => {
 
   // Add doctor modal (for admin)
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [createdDoctorCredentials, setCreatedDoctorCredentials] = useState(null);
+  const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
+    password: '',
     phone: '',
     email: '',
     specialization: 'General Dental Surgery',
@@ -64,15 +72,20 @@ const DoctorList = () => {
   const handleCreateDoctor = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setFormError('');
     try {
-      await createEmployeeApi({
-        ...formData,
-        position: 'Dental Surgeon'
-      });
+      const res = await createDoctorApi(formData);
       setIsModalOpen(false);
+      if (res.data?.credentials) {
+        setCreatedDoctorCredentials({
+          doctorName: formData.name,
+          ...res.data.credentials
+        });
+      }
       fetchData();
     } catch (err) {
       console.error('Error adding doctor:', err);
+      setFormError(err.response?.data?.message || 'Failed to add doctor');
     } finally {
       setSubmitting(false);
     }
@@ -114,11 +127,13 @@ const DoctorList = () => {
             Book with Doctor
           </button>
 
-          {isAdmin && (
+          {canAddDoctor && (
             <button
               onClick={() => {
                 setFormData({
                   name: '',
+                  username: '',
+                  password: '',
                   phone: '',
                   email: '',
                   specialization: 'General Dental Surgery',
@@ -126,6 +141,7 @@ const DoctorList = () => {
                   salary: 2500,
                   status: 'Active'
                 });
+                setFormError('');
                 setIsModalOpen(true);
               }}
               className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition cursor-pointer"
@@ -309,10 +325,17 @@ const DoctorList = () => {
         onClose={() => setIsModalOpen(false)}
         icon={Stethoscope}
         title="Add Attending Doctor"
-        subtitle="Register a new dental doctor / specialist in SNAB Dental MS."
+        subtitle="Register a new dental doctor / specialist in SODMAS."
         maxWidth="max-w-lg"
       >
         <form onSubmit={handleCreateDoctor} className="space-y-3.5 text-xs">
+          {formError && (
+            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
+
           <div>
             <label className="block text-[11px] font-bold text-slate-700 mb-1">Doctor Full Name *</label>
             <input
@@ -320,7 +343,7 @@ const DoctorList = () => {
               type="text"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Dr. Hassan Mohamed"
+              placeholder="e.g. Hassan Mohamed (or Dr. Hassan Mohamed)"
               className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white transition"
             />
           </div>
@@ -343,7 +366,7 @@ const DoctorList = () => {
                 type="email"
                 value={formData.email}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
-                placeholder="doctor@snabdental.com"
+                placeholder="doctor@sodmas.org"
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white transition"
               />
             </div>
@@ -352,14 +375,20 @@ const DoctorList = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">Specialization *</label>
-              <input
-                required
-                type="text"
+              <select
                 value={formData.specialization}
                 onChange={e => setFormData({ ...formData, specialization: e.target.value })}
-                placeholder="e.g. Orthodontics, Oral Surgery"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white transition"
-              />
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white transition"
+              >
+                <option value="General Dental Surgery">General Dental Surgery</option>
+                <option value="Orthodontics">Orthodontics (Braces)</option>
+                <option value="Endodontics">Endodontics (Root Canal)</option>
+                <option value="Periodontics">Periodontics (Gum Disease)</option>
+                <option value="Prosthodontics">Prosthodontics (Implants & Dentures)</option>
+                <option value="Oral & Maxillofacial Surgery">Oral & Maxillofacial Surgery</option>
+                <option value="Pediatric Dentistry">Pediatric Dentistry</option>
+                <option value="Cosmetic Dentistry">Cosmetic Dentistry</option>
+              </select>
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">Department</label>
@@ -371,6 +400,39 @@ const DoctorList = () => {
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white transition"
               />
             </div>
+          </div>
+
+          {/* Account Login Credentials */}
+          <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
+            <div className="flex items-center gap-1.5 text-slate-700 font-bold text-[11px]">
+              <Key className="w-3.5 h-3.5 text-blue-600" />
+              <span>Doctor System Login Credentials</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Username (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={e => setFormData({ ...formData, username: e.target.value })}
+                  placeholder="Auto-generated if empty"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 bg-white transition"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Password (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.password}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Default: doctor123"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 bg-white transition"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              * A doctor user account will be automatically created with full access to patient consultations and queue.
+            </p>
           </div>
 
           <div className="flex justify-end gap-2.5 pt-2">
@@ -386,11 +448,65 @@ const DoctorList = () => {
               disabled={submitting}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-sm transition cursor-pointer disabled:opacity-50"
             >
-              {submitting ? 'Adding...' : 'Save Doctor'}
+              {submitting ? 'Registering...' : 'Register Doctor'}
             </button>
           </div>
         </form>
       </Modal>
+
+      {/* ── Credentials Success Modal ── */}
+      {createdDoctorCredentials && (
+        <Modal
+          isOpen={Boolean(createdDoctorCredentials)}
+          onClose={() => setCreatedDoctorCredentials(null)}
+          icon={CheckCircle2}
+          title="Doctor Registered Successfully"
+          subtitle="A user login account has been created for the attending specialist."
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+              <span className="text-[11px] font-bold text-emerald-800 block">
+                {createdDoctorCredentials.doctorName || 'Doctor'} can now sign in using:
+              </span>
+              <div className="space-y-1 font-mono text-xs text-emerald-950">
+                <div className="flex justify-between items-center py-1 border-b border-emerald-100">
+                  <span className="font-semibold text-emerald-700">Username:</span>
+                  <span className="font-bold">{createdDoctorCredentials.username}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="font-semibold text-emerald-700">Password:</span>
+                  <span className="font-bold">{createdDoctorCredentials.password}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `SODMAS Doctor Credentials:\nUsername: ${createdDoctorCredentials.username}\nPassword: ${createdDoctorCredentials.password}`
+                  );
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer"
+              >
+                <Copy className="w-4 h-4" />
+                {copied ? 'Copied!' : 'Copy Credentials'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreatedDoctorCredentials(null)}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
     </div>
   );

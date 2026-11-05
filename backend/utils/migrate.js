@@ -1,5 +1,5 @@
 /**
- * Dental Hub — Data Migration Script
+ * SODMAS — Data Migration Script
  * 
  * Purpose: Safely migrates existing single-tenant data to multitenant schema.
  * - Creates Tenant records for Snab Dental Clinic and Al Furat Dental Clinic
@@ -48,7 +48,7 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/snab_denta
 
 async function migrate() {
   console.log('\n╔══════════════════════════════════════════════════════════╗');
-  console.log('║       Dental Hub — Multitenant Migration Script          ║');
+  console.log('║       SODMAS — Multitenant Migration Script              ║');
   console.log('╚══════════════════════════════════════════════════════════╝\n');
 
   await mongoose.connect(MONGO_URI);
@@ -142,8 +142,8 @@ async function migrate() {
       is_super_admin: true,
       username: 'superadmin',
       password_hash,
-      full_name: 'Dental Hub Super Admin',
-      email: 'admin@dentalhub.com',
+      full_name: 'SODMAS Super Admin',
+      email: 'admin@sodmas.org',
       role: 'Super Admin',
       status: 'Active'
     });

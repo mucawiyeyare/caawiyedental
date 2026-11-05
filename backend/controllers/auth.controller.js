@@ -82,7 +82,7 @@ export const login = async (req, res, next) => {
       if (!tenant || tenant.status !== 'Active') {
         return res.status(403).json({
           success: false,
-          message: 'Your clinic account is not active. Please contact Dental Hub support.'
+          message: 'Your clinic account is not active. Please contact SODMAS support.'
         });
       }
     }

@@ -41,7 +41,7 @@ export const protect = async (req, res, next) => {
 
       const tenant = user.tenant_id; // already populated
       if (!tenant || tenant.status !== 'Active') {
-        return res.status(403).json({ success: false, message: 'Your clinic account is not active. Please contact Dental Hub support.' });
+        return res.status(403).json({ success: false, message: 'Your clinic account is not active. Please contact SODMAS support.' });
       }
 
       req.tenantId = tenant._id;
@@ -62,6 +62,11 @@ export const protect = async (req, res, next) => {
  */
 export const authorize = (...roles) => {
   return (req, res, next) => {
+    // Super Admins have platform-level access across all routes
+    if (req.isSuperAdmin) {
+      return next();
+    }
+
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,

@@ -29,7 +29,7 @@ import inventoryRoutes from './routes/inventory.routes.js';
 import medicineRoutes from './routes/medicine.routes.js';
 import prescriptionRoutes from './routes/prescription.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
-// Dental Hub Super Admin Routes
+// SODMAS Super Admin Routes
 import superAdminRoutes from './routes/superAdmin.routes.js';
 
 dotenv.config();
@@ -58,7 +58,7 @@ if (process.env.NODE_ENV === 'development') {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    system: 'Dental Hub — Multitenant Dental Management Platform',
+    system: 'SODMAS — Multitenant Dental Management Platform',
     version: '2.0.0',
     timestamp: new Date()
   });
@@ -87,7 +87,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/expenses', expenseRoutes);
-// Dental Hub Super Admin API
+// SODMAS Super Admin API
 app.use('/api/super-admin', superAdminRoutes);
 
 // Fallback 404 handler
@@ -105,7 +105,7 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`\n══════════════════════════════════════════════════════`);
-  console.log(`  🦷 Dental Hub Platform — Backend API v2.0`);
+  console.log(`  🦷 SODMAS Platform — Backend API v2.0`);
   console.log(`  Running on port ${PORT}`);
   console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`══════════════════════════════════════════════════════\n`);

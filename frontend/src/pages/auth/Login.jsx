@@ -16,7 +16,7 @@ import {
 /* ==========================================================================
    TOOTH ICON WITH ORBITAL SWOOSH (Matches Reference Logo)
    ========================================================================== */
-const DentalHubLogo = ({ className = 'w-10 h-10' }) => (
+const SodmasLogo = ({ className = 'w-10 h-10' }) => (
   <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
     {/* Tooth Molar Outline */}
     <path
@@ -99,10 +99,10 @@ const Login = () => {
 
         {/* Top Logo & Slogan */}
         <div className="relative z-10 flex items-center gap-3.5">
-          <DentalHubLogo className="w-12 h-12 shrink-0 drop-shadow-xs" />
+          <SodmasLogo className="w-12 h-12 shrink-0 drop-shadow-xs" />
           <div>
             <h2 className="text-2xl font-black text-blue-600 tracking-tight leading-none">
-              Dental_hub
+              SODMAS
             </h2>
             <p className="text-xs text-slate-500 font-medium tracking-tight mt-1">
               Healthy Smiles, Brighter Tomorrow
@@ -194,9 +194,9 @@ const Login = () => {
           
           {/* Mobile-Only Header Brand */}
           <div className="md:hidden flex items-center gap-3 mb-6">
-            <DentalHubLogo className="w-9 h-9 shrink-0" />
+            <SodmasLogo className="w-9 h-9 shrink-0" />
             <div>
-              <span className="text-xl font-black text-blue-600">Dental_hub</span>
+              <span className="text-xl font-black text-blue-600">SODMAS</span>
               <p className="text-xs text-slate-400 font-medium">Healthy Smiles, Brighter Tomorrow</p>
             </div>
           </div>
@@ -207,7 +207,7 @@ const Login = () => {
               Welcome Back
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              Sign in to your Dental_hub account to continue
+              Sign in to your SODMAS account to continue
             </p>
           </div>
 
@@ -313,11 +313,11 @@ const Login = () => {
               </button>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
-              For security in multi-tenant dental systems, password resets are handled by your <strong>Clinic Administrator</strong> or <strong>Dental Hub Platform Super Admin</strong>.
+              For security in multi-tenant dental systems, password resets are handled by your <strong>Clinic Administrator</strong> or <strong>SODMAS Platform Super Admin</strong>.
             </p>
             <div className="p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-2xl text-xs space-y-1">
               <p className="font-bold">Contact Support:</p>
-              <p className="text-[11px]">Email: support@dentalhub.com</p>
+              <p className="text-[11px]">Email: support@sodmas.org</p>
               <p className="text-[11px]">Phone: +252 61 2339093</p>
             </div>
             <button
