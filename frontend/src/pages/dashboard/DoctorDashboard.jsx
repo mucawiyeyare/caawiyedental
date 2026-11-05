@@ -410,15 +410,15 @@ const DoctorDashboard = () => {
           colorScheme="amber"
         />
         <DoctorStatCard
-          label="Completed"
-          value={stats.completedConsultations ?? 0}
-          subText="Procedures & exams"
+          label="Daily Income Today"
+          value={`$${(stats.todayRevenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
+          subText="Today's collections"
           colorScheme="purple"
         />
         <DoctorStatCard
-          label="Monthly Revenue"
-          value={`$${(stats.monthlyRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subText={`${selectedMonthLabel}`}
+          label="Total Revenue"
+          value={`$${(stats.totalRevenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
+          subText={`$${(stats.monthlyRevenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} this month`}
           colorScheme="slate"
           className="col-span-2 sm:col-span-1"
         />

@@ -135,6 +135,8 @@ export const getDashboardStats = async (req, res, next) => {
         todayAppointmentsCount,
         completedConsultationsCount,
         doctorMonthPayments,
+        doctorAllPayments,
+        doctorTodayPayments,
         doctorDailyRevenueAgg,
         recentVisits,
         upcomingAppointments,
@@ -173,6 +175,25 @@ export const getDashboardStats = async (req, res, next) => {
             { invoice_id: { $in: doctorInvoiceIds } }
           ],
           payment_date: { $gte: targetMonthStart, $lte: targetMonthEnd }
+        }),
+
+        Payment.find({
+          ...tenantFilter,
+          $or: [
+            { doctor_id: { $in: doctorIds } },
+            { visit_id: { $in: doctorVisitIds } },
+            { invoice_id: { $in: doctorInvoiceIds } }
+          ]
+        }),
+
+        Payment.find({
+          ...tenantFilter,
+          $or: [
+            { doctor_id: { $in: doctorIds } },
+            { visit_id: { $in: doctorVisitIds } },
+            { invoice_id: { $in: doctorInvoiceIds } }
+          ],
+          payment_date: { $gte: today, $lte: endToday }
         }),
 
         Payment.aggregate([
@@ -245,7 +266,9 @@ export const getDashboardStats = async (req, res, next) => {
         })
       ]);
 
-      const monthlyRevenue = doctorMonthPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const monthlyRevenue = (doctorMonthPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const totalRevenue = (doctorAllPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const todayRevenue = (doctorTodayPayments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
       const rawName = doctorUser?.full_name || doctorUser?.username || 'Doctor';
       const cleanDoctorName = rawName.startsWith('Dr.') ? rawName : `Dr. ${rawName}`;
@@ -268,7 +291,9 @@ export const getDashboardStats = async (req, res, next) => {
             todayAppointments: todayAppointmentsCount,
             completedConsultations: completedConsultationsCount,
             pendingFollowups: doctorPendingFollowupsCount,
+            todayRevenue: todayRevenue,
             monthlyRevenue: monthlyRevenue,
+            totalRevenue: totalRevenue,
             selectedMonth: selectedMonthStr
           },
           recentPatients: recentVisits,
