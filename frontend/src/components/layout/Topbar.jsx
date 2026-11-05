@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { usePwa } from '../../context/PwaContext.jsx';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { globalSearchApi, getAppointmentsApi, getVisitsApi, getInvoicesApi } from '../../api/endpoints.js';
 import {
@@ -24,7 +25,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Sun,
-  Moon
+  Moon,
+  Download
 } from 'lucide-react';
 
 // Route → page title map
@@ -53,6 +55,7 @@ const PAGE_TITLES = {
 const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
   const { user, logout, isSuperAdmin, tenant } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
+  const { isInstalled, promptInstall } = usePwa();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -632,6 +635,19 @@ const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
           )}
         </button>
 
+        {/* ── PWA Install Button ── */}
+        {!isInstalled && (
+          <button
+            type="button"
+            onClick={promptInstall}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-xs transition border border-blue-200/80 dark:border-blue-800/80 cursor-pointer shadow-2xs shrink-0"
+            title="Install SODMAS Application"
+          >
+            <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span className="hidden md:inline">Install App</span>
+          </button>
+        )}
+
         {/* Divider */}
         <div className="hidden sm:block w-px h-7 bg-slate-200/80 dark:bg-slate-800 mx-1" />
 
@@ -695,6 +711,19 @@ const Topbar = ({ onToggleSidebar, onOpenProfile }) => {
                   <User className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span>Profile</span>
                 </button>
+
+                {!isInstalled && (
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      promptInstall();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl transition text-left cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Install SODMAS App</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {

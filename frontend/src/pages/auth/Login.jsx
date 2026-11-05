@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { usePwa } from '../../context/PwaContext.jsx';
 import {
   Lock,
   User,
@@ -10,7 +11,8 @@ import {
   EyeOff,
   Shield,
   Calendar,
-  X
+  X,
+  Download
 } from 'lucide-react';
 
 /* ==========================================================================
@@ -58,6 +60,7 @@ const Login = () => {
   const [showForgotModal, setShowForgotModal] = useState(false);
 
   const { login } = useAuth();
+  const { isInstalled, promptInstall } = usePwa();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -291,6 +294,20 @@ const Login = () => {
                 </>
               )}
             </button>
+
+            {/* PWA Install Button on Login */}
+            {!isInstalled && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={promptInstall}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition cursor-pointer border border-blue-200/80"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Install SODMAS Application</span>
+                </button>
+              </div>
+            )}
 
           </form>
 
