@@ -1,0 +1,21 @@
+import { featureGuard } from '../middleware/featureGuard.js';
+import express from 'express';
+import {
+  getTreatments,
+  createTreatment,
+  updateTreatment
+} from '../controllers/treatment.controller.js';
+import { protect, authorize } from '../middleware/auth.js';
+
+const router = express.Router();
+
+router.use(protect, featureGuard('treatments'));
+
+router.route('/')
+  .get(getTreatments)
+  .post(authorize('Doctor', 'Admin'), createTreatment);
+
+router.route('/:id')
+  .put(authorize('Doctor', 'Admin'), updateTreatment);
+
+export default router;

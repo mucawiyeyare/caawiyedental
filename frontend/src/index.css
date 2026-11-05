@@ -1,0 +1,202 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body, * {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-size: 1rem;
+    line-height: 1.5;
+    overscroll-behavior-y: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  html.dark body {
+    background-color: #090d16;
+    color: #f8fafc;
+  }
+
+  /* Form elements inherit font */
+  button, input, select, textarea {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.875rem;
+    touch-action: manipulation;
+  }
+
+  /* Mobile accessibility: Prevent automatic zoom on iOS Safari when focusing form fields */
+  @media (max-width: 640px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Scale headings clearly */
+  h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.25; }
+  h2 { font-size: 1.45rem; font-weight: 700; line-height: 1.3; }
+  h3 { font-size: 1.125rem; font-weight: 700; line-height: 1.35; }
+  h4 { font-size: 1rem;    font-weight: 600; line-height: 1.4; }
+
+  /* Tables readable */
+  table { font-size: 0.875rem; }
+  th    { font-size: 0.75rem; }
+  td    { font-size: 0.875rem; }
+
+  /* Labels & small text */
+  label { font-size: 0.875rem; }
+}
+
+/* Safe area support for iOS home indicator */
+.safe-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Momentum scrolling for iOS */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Sidebar Custom Elevated Shadow */
+.sidebar-shadow {
+  box-shadow: 4px 0 28px -4px rgba(15, 23, 42, 0.12), 2px 0 10px -2px rgba(15, 23, 42, 0.06);
+}
+
+/* Touch targets optimization */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Print Specific Styles — Popup-window approach handles all print isolation */
+@media print {
+  @page {
+    margin: 8mm;
+    size: auto;
+  }
+
+  /* Hide navigation chrome on the off-chance window.print() is called directly */
+  header, aside, nav, .no-print, button, input, select {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  /* High contrast colors and background graphics on paper */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ========================================================================= */
+/* Modern Blue & White Responsive Table System (Reference Design)            */
+/* ========================================================================= */
+
+.dental-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.dental-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  min-width: 660px;
+}
+
+.dental-table thead tr {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+}
+
+.dental-table thead th {
+  padding: 0.875rem 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  color: #ffffff !important;
+  border-bottom: 2px solid #1e40af;
+  white-space: nowrap;
+}
+
+.dental-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.15s ease-in-out;
+}
+
+.dental-table tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.dental-table tbody tr:hover {
+  background-color: #eff6ff !important;
+}
+
+.dental-table tbody td {
+  padding: 0.875rem 1rem;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.dental-table tfoot tr {
+  background-color: #f1f5f9;
+  border-top: 2px solid #cbd5e1;
+  font-weight: 800;
+}
+
+.dental-table tfoot td {
+  padding: 0.875rem 1rem;
+  font-size: 0.8125rem;
+  color: #0f172a;
+}

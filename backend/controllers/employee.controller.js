@@ -1,0 +1,115 @@
+import Employee from '../models/Employee.js';
+import { generateEmployeeCode } from '../utils/generateId.js';
+import { logAudit } from '../middleware/audit.js';
+
+export const getEmployees = async (req, res, next) => {
+  try {
+    const { status, department, search } = req.query;
+    let filter = { tenant_id: req.tenantId };
+
+    if (status) filter.status = status;
+    if (department) filter.department = department;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { position: { $regex: search, $options: 'i' } },
+        { employee_id: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const employees = await Employee.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, count: employees.length, data: employees });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getEmployeeById = async (req, res, next) => {
+  try {
+    const employee = await Employee.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+    res.json({ success: true, data: employee });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createEmployee = async (req, res, next) => {
+  try {
+    const autoId = await generateEmployeeCode(req.tenantId);
+
+    const employee = await Employee.create({
+      tenant_id: req.tenantId,
+      employee_id: req.body.employee_id || autoId,
+      ...req.body
+    });
+
+    await logAudit({
+      user: req.user,
+      tenant_id: req.tenantId,
+      action: 'CREATE_EMPLOYEE',
+      entity: 'Employee',
+      entity_id: employee._id,
+      details: { name: employee.name, position: employee.position }
+    });
+
+    res.status(201).json({ success: true, data: employee });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateEmployee = async (req, res, next) => {
+  try {
+    const employee = await Employee.findOneAndUpdate(
+      { _id: req.params.id, tenant_id: req.tenantId },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+
+    await logAudit({
+      user: req.user,
+      tenant_id: req.tenantId,
+      action: 'UPDATE_EMPLOYEE',
+      entity: 'Employee',
+      entity_id: employee._id,
+      details: { name: employee.name, status: employee.status }
+    });
+
+    res.json({ success: true, data: employee });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteEmployee = async (req, res, next) => {
+  try {
+    const employee = await Employee.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+
+    employee.status = 'Terminated';
+    await employee.save();
+
+    await logAudit({
+      user: req.user,
+      tenant_id: req.tenantId,
+      action: 'TERMINATE_EMPLOYEE',
+      entity: 'Employee',
+      entity_id: employee._id,
+      details: { name: employee.name }
+    });
+
+    res.json({ success: true, message: 'Employee marked as terminated' });
+  } catch (error) {
+    next(error);
+  }
+};

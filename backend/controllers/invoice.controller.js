@@ -1,0 +1,300 @@
+import Invoice from '../models/Invoice.js';
+import Visit from '../models/Visit.js';
+import Payment from '../models/Payment.js';
+import LabRequest from '../models/LabRequest.js';
+import Treatment from '../models/Treatment.js';
+import { logAudit } from '../middleware/audit.js';
+
+export const getInvoices = async (req, res, next) => {
+  try {
+    const { status, patient_id, visit_id, date, startDate, endDate } = req.query;
+    let filter = { tenant_id: req.tenantId };
+
+    if (status) filter.status = status;
+    if (patient_id) filter.patient_id = patient_id;
+    if (visit_id) filter.visit_id = visit_id;
+
+    if (date) {
+      const target = new Date(date);
+      const startOfDay = new Date(target.getFullYear(), target.getMonth(), target.getDate(), 0, 0, 0, 0);
+      const endOfDay = new Date(target.getFullYear(), target.getMonth(), target.getDate(), 23, 59, 59, 999);
+      filter.createdAt = { $gte: startOfDay, $lte: endOfDay };
+    } else if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    const invoices = await Invoice.find(filter)
+      .populate('patient_id', 'name patient_number telephone')
+      .populate({
+        path: 'visit_id',
+        select: 'visit_number status doctor_id',
+        populate: { path: 'doctor_id', select: 'full_name username specialization' }
+      })
+      .populate('doctor_id', 'full_name username specialization')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: invoices.length, data: invoices });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getInvoiceById = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findOne({ _id: req.params.id, tenant_id: req.tenantId })
+      .populate('patient_id')
+      .populate({
+        path: 'visit_id',
+        populate: { path: 'doctor_id', select: 'full_name username specialization' }
+      })
+      .populate('doctor_id', 'full_name username specialization');
+
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+
+    res.json({ success: true, data: invoice });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getVisitInvoice = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findOne({ visit_id: req.params.visitId, tenant_id: req.tenantId })
+      .populate('patient_id')
+      .populate({
+        path: 'visit_id',
+        populate: { path: 'doctor_id', select: 'full_name username specialization' }
+      })
+      .populate('doctor_id', 'full_name username specialization');
+
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'No invoice found for this visit' });
+    }
+
+    res.json({ success: true, data: invoice });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const applyDiscount = async (req, res, next) => {
+  try {
+    const { discount } = req.body;
+    const invoice = await Invoice.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+
+    const discountAmount = Number(discount) || 0;
+    invoice.discount = discountAmount;
+    invoice.total_amount = Math.max(0, (invoice.subtotal || 0) - discountAmount);
+
+    if (invoice.total_amount <= 0) {
+      invoice.total_amount = 0;
+      invoice.paid_amount = 0;
+      invoice.balance = 0;
+      invoice.status = 'Paid';
+      if (invoice.items && invoice.items.length > 0) {
+        invoice.items.forEach(item => { item.paid_status = 'Paid'; });
+      }
+      await Payment.deleteMany({ invoice_id: invoice._id, tenant_id: req.tenantId });
+    } else {
+      if ((invoice.paid_amount || 0) > invoice.total_amount) {
+        invoice.paid_amount = invoice.total_amount;
+      }
+      invoice.balance = Math.max(0, invoice.total_amount - (invoice.paid_amount || 0));
+
+      if (invoice.balance === 0) {
+        invoice.status = 'Paid';
+        if (invoice.items && invoice.items.length > 0) {
+          invoice.items.forEach(item => { item.paid_status = 'Paid'; });
+        }
+      } else if (invoice.paid_amount > 0) {
+        invoice.status = 'Partially Paid';
+      } else {
+        invoice.status = 'Unpaid';
+      }
+
+      // Reconcile payments
+      const existingPayments = await Payment.find({ invoice_id: invoice._id, tenant_id: req.tenantId }).sort({ payment_date: -1 });
+      let runningAllowed = invoice.paid_amount;
+      for (const p of existingPayments) {
+        if (runningAllowed <= 0) {
+          await Payment.findOneAndDelete({ _id: p._id, tenant_id: req.tenantId });
+        } else if (p.amount > runningAllowed) {
+          p.amount = runningAllowed;
+          p.remaining_balance = invoice.balance;
+          await p.save();
+          runningAllowed = 0;
+        } else {
+          runningAllowed -= p.amount;
+        }
+      }
+    }
+
+    await invoice.save();
+
+    await logAudit({
+      user: req.user,
+      tenant_id: req.tenantId,
+      action: 'APPLY_DISCOUNT',
+      entity: 'Invoice',
+      entity_id: invoice._id,
+      details: { invoice_number: invoice.invoice_number, discount: discountAmount, new_total: invoice.total_amount }
+    });
+
+    res.json({ success: true, data: invoice });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateInvoice = async (req, res, next) => {
+  try {
+    const { items, discount, status } = req.body;
+    const invoice = await Invoice.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+
+    if (items && Array.isArray(items)) {
+      invoice.items = items.map(item => {
+        const qty = Number(item.quantity) || 1;
+        const unit = Number(item.unit_price) || 0;
+        return {
+          item_type: item.item_type || 'Other',
+          description: item.description || 'Service',
+          quantity: qty,
+          unit_price: unit,
+          total_price: qty * unit,
+          paid_status: item.paid_status || 'Unpaid'
+        };
+      });
+      invoice.subtotal = invoice.items.reduce((acc, i) => acc + (i.total_price || 0), 0);
+    }
+
+    if (discount !== undefined) {
+      invoice.discount = Math.max(0, Number(discount) || 0);
+    }
+
+    invoice.total_amount = Math.max(0, (invoice.subtotal || 0) - (invoice.discount || 0));
+
+    // Reconcile paid amounts and payments when invoice total changes
+    if (invoice.total_amount <= 0) {
+      invoice.total_amount = 0;
+      invoice.paid_amount = 0;
+      invoice.balance = 0;
+      invoice.status = 'Paid';
+      if (invoice.items && invoice.items.length > 0) {
+        invoice.items.forEach(item => { item.paid_status = 'Paid'; });
+      }
+      await Payment.deleteMany({ invoice_id: invoice._id, tenant_id: req.tenantId });
+    } else {
+      if ((invoice.paid_amount || 0) > invoice.total_amount) {
+        invoice.paid_amount = invoice.total_amount;
+      }
+      invoice.balance = Math.max(0, invoice.total_amount - (invoice.paid_amount || 0));
+
+      if (invoice.balance <= 0) {
+        invoice.status = 'Paid';
+        if (invoice.items && invoice.items.length > 0) {
+          invoice.items.forEach(item => { item.paid_status = 'Paid'; });
+        }
+      } else if (invoice.paid_amount > 0) {
+        invoice.status = 'Partially Paid';
+      } else {
+        invoice.status = status || 'Unpaid';
+      }
+
+      const payments = await Payment.find({ invoice_id: invoice._id, tenant_id: req.tenantId }).sort({ payment_date: -1 });
+      let allowed = invoice.paid_amount;
+      for (const p of payments) {
+        if (allowed <= 0) {
+          await Payment.findOneAndDelete({ _id: p._id, tenant_id: req.tenantId });
+        } else if (p.amount > allowed) {
+          p.amount = allowed;
+          p.remaining_balance = invoice.balance;
+          await p.save();
+          allowed = 0;
+        } else {
+          allowed -= p.amount;
+        }
+      }
+    }
+
+    await invoice.save();
+
+    await logAudit({
+      user: req.user,
+      tenant_id: req.tenantId,
+      action: 'UPDATE_INVOICE',
+      entity: 'Invoice',
+      entity_id: invoice._id,
+      details: {
+        invoice_number: invoice.invoice_number,
+        subtotal: invoice.subtotal,
+        discount: invoice.discount,
+        total_amount: invoice.total_amount,
+        paid_amount: invoice.paid_amount,
+        balance: invoice.balance,
+        items_count: invoice.items.length
+      }
+    });
+
+    const populatedInvoice = await Invoice.findOne({ _id: invoice._id, tenant_id: req.tenantId })
+      .populate('patient_id', 'name patient_number telephone')
+      .populate({
+        path: 'visit_id',
+        select: 'visit_number status doctor_id',
+        populate: { path: 'doctor_id', select: 'full_name username specialization' }
+      })
+      .populate('doctor_id', 'full_name username specialization');
+
+    res.json({
+      success: true,
+      message: 'Invoice updated successfully',
+      data: populatedInvoice
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteInvoice = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+
+    await logAudit({
+      user: req.user,
+      tenant_id: req.tenantId,
+      action: 'DELETE_INVOICE',
+      entity: 'Invoice',
+      entity_id: invoice._id,
+      details: { invoice_number: invoice.invoice_number }
+    });
+
+    // Clean up any payments linked to this deleted invoice
+    await Payment.deleteMany({ invoice_id: invoice._id, tenant_id: req.tenantId });
+    await Invoice.findOneAndDelete({ _id: req.params.id, tenant_id: req.tenantId });
+
+    res.json({
+      success: true,
+      message: 'Invoice and associated payments deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
