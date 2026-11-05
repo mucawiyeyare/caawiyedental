@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { usePwa } from '../../context/PwaContext.jsx';
 import { getAppointmentsApi, getVisitsApi, getInvoicesApi } from '../../api/endpoints.js';
 import {
   LayoutGrid,
@@ -26,13 +25,11 @@ import {
   UserCheck,
   DollarSign,
   Building2,
-  Bell,
-  Download
+  Bell
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose, onOpenProfile }) => {
   const { user, isSuperAdmin, isFeatureEnabled, tenant } = useAuth();
-  const { isInstalled, promptInstall } = usePwa();
 
   // Dynamic branding
   const clinicName = isSuperAdmin
@@ -310,20 +307,6 @@ const Sidebar = ({ isOpen, onClose, onOpenProfile }) => {
             );
           })}
         </div>
-
-        {/* PWA Install Button Card in Sidebar */}
-        {!isInstalled && (
-          <div className="px-3 pb-2 pt-1 shrink-0">
-            <button
-              type="button"
-              onClick={promptInstall}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all active:scale-[0.98] cursor-pointer group"
-            >
-              <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
-              <span>Install SODMAS App</span>
-            </button>
-          </div>
-        )}
 
         {/* Bottom Profile Section (Matches Profile item in Reference) */}
         <div className="p-3 shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
