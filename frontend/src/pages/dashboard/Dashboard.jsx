@@ -688,9 +688,14 @@ const Dashboard = () => {
 
   // Real Database Metrics
   const todayRevenueVal = stats?.financials?.todayRevenue ?? 0;
+  const monthRevenueVal = stats?.financials?.monthRevenue ?? todayRevenueVal;
+  const totalRevenueVal = stats?.financials?.totalRevenue ?? todayRevenueVal;
   const totalOutstanding = stats?.financials?.totalOutstanding ?? 0;
+  const totalPatientsCount = stats?.patients?.total ?? patients.length;
   const todayPatientsCount = stats?.patients?.today ?? (stats?.visits?.today ?? 0);
   const todayApptsCount = stats?.appointments?.today ?? appointments.length;
+
+  const totalBilled = totalRevenueVal + totalOutstanding;
 
   const trends = stats?.trends || {
     revenue: '+0%',
@@ -712,21 +717,19 @@ const Dashboard = () => {
 
   // Calculate completion & flow percentages for Circular Donut KPI Gauges based on live database data
   const collectionRate = useMemo(() => {
-    const totalBilled = todayRevenueVal + totalOutstanding;
     if (totalBilled > 0) {
-      return Math.min(Math.max(Math.round((todayRevenueVal / totalBilled) * 100), 0), 100);
+      return Math.min(Math.max(Math.round((totalRevenueVal / totalBilled) * 100), 0), 100);
     }
-    return todayRevenueVal > 0 ? 100 : 0;
-  }, [todayRevenueVal, totalOutstanding]);
+    return totalRevenueVal > 0 ? 100 : 0;
+  }, [totalRevenueVal, totalBilled]);
 
-  const patientFlowRate = useMemo(() => {
-    if (todayPatientsCount > 0) {
-      const activeWaiting = stats?.visits?.waitingForDoctor ?? 0;
-      const served = Math.max(todayPatientsCount - activeWaiting, 0);
-      return Math.min(Math.max(Math.round((served / todayPatientsCount) * 100), 0), 100);
+  const patientGrowthRate = useMemo(() => {
+    if (totalPatientsCount > 0) {
+      const activeMonth = stats?.patients?.month ?? totalPatientsCount;
+      return Math.min(Math.max(Math.round((activeMonth / totalPatientsCount) * 100), 10), 100);
     }
     return 0;
-  }, [todayPatientsCount, stats]);
+  }, [totalPatientsCount, stats]);
 
   const apptCompletionRate = useMemo(() => {
     if (todayApptsCount > 0) {
@@ -737,12 +740,11 @@ const Dashboard = () => {
   }, [todayApptsCount, stats]);
 
   const receivableRiskRate = useMemo(() => {
-    const totalBilled = todayRevenueVal + totalOutstanding;
     if (totalBilled > 0) {
       return Math.min(Math.max(Math.round((totalOutstanding / totalBilled) * 100), 0), 100);
     }
-    return 0;
-  }, [todayRevenueVal, totalOutstanding]);
+    return totalOutstanding > 0 ? 100 : 0;
+  }, [totalOutstanding, totalBilled]);
 
   return (
     <div className="space-y-6 pb-12 font-sans">
@@ -795,41 +797,45 @@ const Dashboard = () => {
       {/* ── 2. TOP MODERN KPI CARDS (Matching Reference Design with Circular Progress Gauges) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* KPI 1: Collections / Sales (Blue) */}
-        <CircularKpiCard
-          icon={<ShoppingBag className="w-5 h-5 stroke-[2.2]" />}
-          value={`$${todayRevenueVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-          label="Sales Collections"
-          percentage={collectionRate}
-          colorScheme="blue"
-          onOptionsClick={() => navigate('/billing')}
-        />
-
-        {/* KPI 2: Patients in Clinic (Green) */}
+        {/* KPI 1: Total Patients (Blue) */}
         <CircularKpiCard
           icon={<Users className="w-5 h-5 stroke-[2.2]" />}
-          value={todayPatientsCount > 0 ? `${todayPatientsCount}` : '0'}
-          label="Patients Flow"
-          percentage={patientFlowRate}
-          colorScheme="green"
-          onOptionsClick={() => navigate('/visits')}
+          value={totalPatientsCount > 0 ? `${totalPatientsCount}` : '0'}
+          label="Total Patients"
+          subText={`${stats?.patients?.today ?? 0} active today`}
+          percentage={patientGrowthRate}
+          colorScheme="blue"
+          onOptionsClick={() => navigate('/patients')}
         />
 
-        {/* KPI 3: Scheduled Appointments (Amber) */}
+        {/* KPI 2: Today Appointments (Green) */}
         <CircularKpiCard
           icon={<Calendar className="w-5 h-5 stroke-[2.2]" />}
           value={todayApptsCount > 0 ? `${todayApptsCount}` : '0'}
-          label="Appointments"
+          label="Today Appointments"
+          subText={`${stats?.appointments?.total ?? appointments.length} total scheduled`}
           percentage={apptCompletionRate}
-          colorScheme="amber"
+          colorScheme="green"
           onOptionsClick={() => navigate('/appointments')}
         />
 
-        {/* KPI 4: Pending Receivables (Red) */}
+        {/* KPI 3: Total Revenue (Amber) */}
+        <CircularKpiCard
+          icon={<ShoppingBag className="w-5 h-5 stroke-[2.2]" />}
+          value={`$${totalRevenueVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+          label="Total Revenue"
+          subText={`$${monthRevenueVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} this month`}
+          percentage={collectionRate}
+          colorScheme="amber"
+          onOptionsClick={() => navigate('/billing')}
+        />
+
+        {/* KPI 4: Pending Payments (Red) */}
         <CircularKpiCard
           icon={<RotateCcw className="w-5 h-5 stroke-[2.2]" />}
           value={`$${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-          label="Pending Receivables"
+          label="Pending Payments"
+          subText={`${stats?.financials?.unpaidInvoicesCount ?? (totalOutstanding > 0 ? 1 : 0)} unpaid invoices`}
           percentage={receivableRiskRate}
           colorScheme="red"
           onOptionsClick={() => navigate('/billing')}

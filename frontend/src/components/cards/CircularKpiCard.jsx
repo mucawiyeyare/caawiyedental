@@ -14,6 +14,7 @@ const CircularKpiCard = ({
   icon,
   value,
   label,
+  subText,
   percentage = 0,
   colorScheme = 'blue',
   onOptionsClick,
@@ -101,9 +102,14 @@ const CircularKpiCard = ({
           <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-sans">
             {value}
           </div>
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1.5 truncate">
+          <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-1.5 truncate">
             {label}
           </p>
+          {subText && (
+            <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+              {subText}
+            </p>
+          )}
         </div>
 
         {/* Circular Donut Progress Indicator */}
